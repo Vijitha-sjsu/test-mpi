@@ -1,0 +1,4 @@
+#define mini2_VERSION_MAJOR @mini2_VERSION_MAJOR@
+#define mini2_VERSION_MINOR @mini2_VERSION_MINOR@
+// config.h.in
+#define ProjectVersion "@PROJECT_VERSION@"
