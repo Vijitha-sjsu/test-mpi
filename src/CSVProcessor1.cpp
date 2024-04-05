@@ -5,16 +5,10 @@
 #include <vector>
 #include <omp.h>
 #include <set>
-#include <ctime>
-#include <iomanip>
 
 
 CSVProcessor::CSVProcessor(const std::string& inputFile, const std::string& outputFile)
-    : inputFile(inputFile), 
-      outputFile(outputFile), 
-      featureEngineeredFile("feature_engineered_data.csv"), 
-      statsFile("processed_stats.txt"), 
-      totalRows(0) {}
+    : inputFile(inputFile), outputFile(outputFile), statsFile("processed_stats.txt"), totalRows(0) {}
 
 void CSVProcessor::imputeMissingValues() {
     std::vector<size_t> columnsToImpute = {/* indices of columns with missing values */};
@@ -99,78 +93,6 @@ void CSVProcessor::removeDuplicates() {
 
     lines.swap(newLines);  // Replace the old lines with the new, deduplicated lines
 }
-
-void CSVProcessor::dateToDayAndMonth(const std::string& dateStr, std::string& dayOfWeek, std::string& month) {
-    std::tm tm = {};
-    std::istringstream dateStream(dateStr);
-    dateStream >> std::get_time(&tm, "%m/%d/%Y");  // Assume date is in MM/DD/YYYY format
-
-    std::time_t t = std::mktime(&tm);
-    char buffer[10];
-
-    strftime(buffer, sizeof(buffer), "%A", std::localtime(&t));
-    dayOfWeek = buffer;
-
-    strftime(buffer, sizeof(buffer), "%B", std::localtime(&t));
-    month = buffer;
-}
-
-std::string CSVProcessor::timeTo24HourFormat(const std::string& timeStr) {
-    std::string result;
-    int hour = std::stoi(timeStr.substr(0, 2));
-    int minute = std::stoi(timeStr.substr(2, 2));
-    char meridian = timeStr.back();
-
-    if (meridian == 'P' && hour != 12) {
-        hour += 12;
-    } else if (meridian == 'A' && hour == 12) {
-        hour = 0;
-    }
-
-    std::ostringstream resultStream;
-    resultStream << std::setw(2) << std::setfill('0') << hour << ":"
-                 << std::setw(2) << std::setfill('0') << minute;
-    result = resultStream.str();
-    return result;
-}
-void CSVProcessor::featureEngineering() {
-    std::ofstream feOut(featureEngineeredFile);
-    if (!feOut.is_open()) {
-        std::cerr << "Error opening feature engineering output file." << std::endl;
-        return;
-    }
-
-    for (const auto& line : lines) {
-        std::istringstream stream(line);
-        std::ostringstream newLine;
-        std::string field;
-        size_t fieldIndex = 0;
-        std::string dayOfWeek, month, formattedTime;
-
-        while (getline(stream, field, ',')) {
-            // Example feature engineering for date and time fields
-            if (fieldIndex == 4) { // Assuming 4 is the index for Issue Date
-                dateToDayAndMonth(field, dayOfWeek, month);
-                newLine << dayOfWeek << "," << month; // Write the new features
-            } else if (fieldIndex == 19) { // Assuming 19 is the index for Violation Time
-                formattedTime = timeTo24HourFormat(field);
-                newLine << formattedTime; // Write the new feature
-            } else {
-                newLine << field; // Copy the field as is
-            }
-
-            if (fieldIndex < NUM_FIELDS - 1) {
-                newLine << ",";
-            }
-            ++fieldIndex;
-        }
-
-        feOut << newLine.str() << "\n";
-    }
-
-    feOut.close();
-}
-
 
 
 void CSVProcessor::processFile() {
@@ -278,13 +200,8 @@ void CSVProcessor::processFile() {
         }
         out << newRow << "\n";
     }
-    featureEngineering();  // Implement this function based on your feature engineering needs
 
-    // Here, for simplicity, we just copy the data to the feature engineering output
-    // You should replace this with actual feature engineering logic
-  
     std::cout << "Filtered data saved to " << outputFile << std::endl;
-    std::cout << "Feature-engineered data saved to " << featureEngineeredFile << std::endl;
     std::cout << "Field statistics saved to " << statsFile << std::endl;
 
 

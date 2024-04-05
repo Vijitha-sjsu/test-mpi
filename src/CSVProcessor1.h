@@ -10,21 +10,14 @@ public:
     void processFile();
     void imputeMissingValues();
     void removeDuplicates();
-    void featureEngineering();
     static constexpr size_t NUM_FIELDS = 43;
 
 private:
     std::string inputFile;
     std::string outputFile;
-    std::string featureEngineeredFile;
-    std::string statsFile;
+    std::string statsFile = "empty_field_counts.txt";
     std::vector<std::string> lines;
-    size_t totalRows;
-
-     // Declare the new methods as private member functions
-    void dateToDayAndMonth(const std::string& dateStr, std::string& dayOfWeek, std::string& month);
-    std::string timeTo24HourFormat(const std::string& timeStr);
-
+    size_t totalRows = 0;
 
     std::vector<int> countEmptyFieldsPerColumn(const std::vector<std::string>& chunk);
     bool isValidRow(const std::string& row);

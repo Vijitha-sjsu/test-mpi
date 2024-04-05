@@ -11,9 +11,10 @@ find_package(OpenMP REQUIRED)
 # Include the configuration header in the build and add CSVProcessor.cpp to the executable
 #add_executable(${PROJECT_NAME} mini2.cpp CSVProcessor.cpp)
 add_executable(${PROJECT_NAME} 
-    src/main.cpp
-    #src/mini2.cpp 
+    #src/main.cpp
+    src/mini2.cpp 
     src/CSVProcessor.cpp
+    #src/CompleteProcessor.cpp
     src/DataLoader.cpp  # Add this if you have a DataLoader.cpp
 )
 
