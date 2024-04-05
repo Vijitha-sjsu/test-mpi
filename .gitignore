@@ -2,4 +2,5 @@ data/ParkingViolationCodes_January2020.csv
 data/ParkingViolationCodes_January2020.xlsx
 *.csv
 build
-
+.vscode/
+processedfiles/

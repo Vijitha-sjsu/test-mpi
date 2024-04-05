@@ -1,43 +1,43 @@
 Summons Number,0,0%,Kept
-Plate ID,149,0.000965301%,Kept
+Plate ID,0,0%,Kept
 Registration State,0,0%,Kept
 Plate Type,0,0%,Kept
 Issue Date,0,0%,Kept
 Violation Code,0,0%,Kept
-Vehicle Body Type,33128,0.214621%,Kept
-Vehicle Make,11745,0.0760903%,Kept
+Vehicle Body Type,25,5%,Kept
+Vehicle Make,9,1.8%,Kept
 Issuing Agency,0,0%,Kept
 Street Code1,0,0%,Kept
 Street Code2,0,0%,Kept
 Street Code3,0,0%,Kept
 Vehicle Expiration Date,0,0%,Kept
-Violation Location,6035566,39.1016%,Kept
+Violation Location,3,0.6%,Kept
 Violation Precinct,0,0%,Kept
 Issuer Precinct,0,0%,Kept
 Issuer Code,0,0%,Kept
-Issuer Command,6030198,39.0668%,Kept
-Issuer Squad,6424748,41.6229%,Kept
-Violation Time,218,0.00141232%,Kept
-Time First Observed,14643865,94.8707%,Removed
-Violation County,37194,0.240962%,Kept
-Violation In Front Of Or Opposite,6097269,39.5013%,Kept
-House Number,6164206,39.935%,Kept
-Street Name,1521,0.00985384%,Kept
-Intersecting Street,7990831,51.7688%,Removed
-Date First Observed,37,0.000239706%,Kept
+Issuer Command,0,0%,Kept
+Issuer Squad,0,0%,Kept
+Violation Time,0,0%,Kept
+Time First Observed,447,89.4%,Removed
+Violation County,47,9.4%,Kept
+Violation In Front Of Or Opposite,63,12.6%,Kept
+House Number,121,24.2%,Kept
+Street Name,0,0%,Kept
+Intersecting Street,370,74%,Removed
+Date First Observed,0,0%,Kept
 Law Section,0,0%,Kept
-Sub Division,2165,0.014026%,Kept
-Violation Legal Code,9405354,60.9328%,Removed
-Days Parking In Effect,6150639,39.8471%,Kept
-From Hours In Effect,10441360,67.6446%,Removed
-To Hours In Effect,10441373,67.6447%,Removed
-Vehicle Color,1019851,6.60713%,Kept
-Unregistered Vehicle?,15118490,97.9455%,Removed
-Vehicle Year,274,0.00177512%,Kept
-Meter Number,13533525,87.6773%,Removed
-Feet From Curb,274,0.00177512%,Kept
-Violation Post Code,6741277,43.6735%,Kept
-Violation Description,318062,2.06057%,Kept
-No Standing or Stopping Violation,15421514,99.9087%,Removed
-Hydrant Violation,15435605,100%,Removed
-Double Parking Violation,14092,0.0912954%,Kept
+Sub Division,0,0%,Kept
+Violation Legal Code,500,100%,Removed
+Days Parking In Effect,0,0%,Kept
+From Hours In Effect,0,0%,Kept
+To Hours In Effect,0,0%,Kept
+Vehicle Color,39,7.8%,Kept
+Unregistered Vehicle?,0,0%,Kept
+Vehicle Year,0,0%,Kept
+Meter Number,0,0%,Kept
+Feet From Curb,0,0%,Kept
+Violation Post Code,500,100%,Removed
+Violation Description,500,100%,Removed
+No Standing or Stopping Violation,500,100%,Removed
+Hydrant Violation,500,100%,Removed
+Double Parking Violation,0,0%,Kept
