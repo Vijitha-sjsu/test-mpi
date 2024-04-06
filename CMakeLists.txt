@@ -8,15 +8,18 @@ project(mini2
 # Find the OpenMP package
 find_package(OpenMP REQUIRED)
 
+add_subdirectory(matplotplusplus)
 # Include the configuration header in the build and add CSVProcessor.cpp to the executable
 #add_executable(${PROJECT_NAME} mini2.cpp CSVProcessor.cpp)
 add_executable(${PROJECT_NAME} 
     #src/main.cpp
     src/mini2.cpp 
     src/CSVProcessor.cpp
+    src/Analyzer.cpp
     #src/CompleteProcessor.cpp
-    src/DataLoader.cpp  # Add this if you have a DataLoader.cpp
 )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC matplot)
 
 # If OpenMP was found, link it to the target
 if(OpenMP_CXX_FOUND OR OpenMP_FOUND)

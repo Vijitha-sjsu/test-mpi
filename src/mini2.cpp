@@ -1,11 +1,17 @@
 #include "CSVProcessor.h"
+#include "Analyzer.h"
+#include <iostream>
 
+using namespace std;
 int main()
 {
-    // CSVProcessor processor("../data/Parking_Violations_Issued_-_Fiscal_Year_2022.csv", "Filtered_Parking_Violations.csv");
     CSVProcessor processor("../data/small.csv", "../processedfiles/Filtered_Parking_Violations.csv", "../processedfiles/feature_engineered_data.csv", "../processedfiles/processed_stats.txt");
 
-    processor.processFile();
+    vector<string> processedLines = processor.processFile();
+
+    Analyzer analyzer(processedLines);
+    analyzer.aggregateData();
+    analyzer.showTopTenPrecincts();
 
     return 0;
 }

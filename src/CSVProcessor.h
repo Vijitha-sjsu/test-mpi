@@ -8,7 +8,7 @@ class CSVProcessor
 {
 public:
     CSVProcessor(const std::string &inputFile, const std::string &outputFile, const std::string &featureEngineeredFile, const std::string &statsFile);
-    void processFile();
+    std::vector<std::string> processFile();
     void imputeMissingValues();
     void removeDuplicates();
     void featureEngineering();

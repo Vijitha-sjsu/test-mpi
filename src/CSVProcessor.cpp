@@ -1,4 +1,5 @@
 #include "CSVProcessor.h"
+#include "Constants.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -200,14 +201,14 @@ void CSVProcessor::featureEngineering()
             }
             ++fieldIndex;
         }
-
+        cout << "new line: " << newLine.str() << endl;
         feOut << newLine.str() << "\n";
     }
 
     feOut.close();
 }
 
-void CSVProcessor::processFile()
+vector<string> CSVProcessor::processFile()
 {
     std::ifstream file(inputFile);
     std::ofstream out(outputFile, std::ios::trunc), statsOut(statsFile, std::ios::trunc), feOut(featureEngineeredFile, std::ios::trunc);
@@ -218,7 +219,7 @@ void CSVProcessor::processFile()
     if (!file.is_open())
     {
         std::cerr << "Error opening file: " << inputFile << std::endl;
-        return;
+        return lines;
     }
 
     // Read and store headers
@@ -237,8 +238,6 @@ void CSVProcessor::processFile()
     {
         lines.push_back(row);
     }
-
-    cout << "Line size after pushing: " << lines.size() << endl;
 
     file.close(); // Close the file as it's no longer needed for direct reading
 
@@ -339,7 +338,16 @@ void CSVProcessor::processFile()
         out << newRow << "\n";
     }
 
-    featureEngineering(); // Implement this function based on your feature engineering needs
+    lines.clear();
+
+    // get all new lines from the filtered file
+    ifstream filteredFile(outputFile);
+    while (getline(filteredFile, row))
+    {
+        lines.push_back(row);
+    }
+
+    // featureEngineering(); // Implement this function based on your feature engineering needs)
 
     // Here, for simplicity, we just copy the data to the feature engineering output
     // You should replace this with actual feature engineering logic
@@ -347,4 +355,6 @@ void CSVProcessor::processFile()
     std::cout << "Filtered data saved to " << outputFile << std::endl;
     std::cout << "Feature-engineered data saved to " << featureEngineeredFile << std::endl;
     std::cout << "Field statistics saved to " << statsFile << std::endl;
+
+    return lines;
 }
