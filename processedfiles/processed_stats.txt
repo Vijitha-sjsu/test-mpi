@@ -11,7 +11,7 @@ Street Code1,0,0%,Kept
 Street Code2,0,0%,Kept
 Street Code3,0,0%,Kept
 Vehicle Expiration Date,0,0%,Kept
-Violation Location,241451,42.6711%,Kept
+Violation Location,0,0%,Kept
 Violation Precinct,0,0%,Kept
 Issuer Precinct,0,0%,Kept
 Issuer Code,0,0%,Kept
@@ -40,4 +40,4 @@ Violation Post Code,269451,47.6195%,Kept
 Violation Description,12300,2.17375%,Kept
 No Standing or Stopping Violation,565626,99.9618%,Removed
 Hydrant Violation,565841,99.9998%,Removed
-Double Parking Violation,215,0.0379965%,Kept
+Double Parking Violation,0,0%,Kept

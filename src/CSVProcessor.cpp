@@ -26,66 +26,20 @@ CSVProcessor::CSVProcessor(const std::string &inputFile, const std::string &outp
 vector<string> CSVProcessor::imputeMissingValues(vector<string> localChunk)
 {
 
-    std::vector<size_t> columnsToImpute = {/*13, 29, 38, 39, 40, 41, 42*/};
+    std::vector<size_t> columnsToImpute = {13};
     std::vector<double> sums(columnsToImpute.size(), 0.0);
     std::vector<int> counts(columnsToImpute.size(), 0);
 
-    int count = 0;
-    std::istringstream stream(localChunk[0]);
-    std::string field;
-    while (count != 13)
+// First pass: Compute sums and counts for mean calculation in a thread-safe manner
+#pragma omp parallel
     {
-        getline(stream, field, ',');
-        count++;
-    }
+        std::vector<double> localSums(columnsToImpute.size(), 0.0);
+        std::vector<int> localCounts(columnsToImpute.size(), 0);
 
-    cout << "Index: " << count << " field: " << field << endl;
-
-    // First pass: Compute sums and counts for mean calculation in a thread-safe manner
-    /*#pragma omp parallel
-        {
-            std::vector<double> localSums(columnsToImpute.size(), 0.0);
-            std::vector<int> localCounts(columnsToImpute.size(), 0);
-
-    #pragma omp for nowait
-            for (size_t i = 0; i < localChunk.size(); ++i)
-            {
-                std::istringstream stream(localChunk[i]);
-                std::string field;
-                size_t fieldIndex = 0, colIndex = 0;
-
-                while (getline(stream, field, ','))
-                {
-                    if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
-                    {
-                        if (!field.empty() && field != "NA")
-                        {
-                            localSums[colIndex] += std::stod(field);
-                            localCounts[colIndex]++;
-                        }
-                        colIndex++;
-                    }
-                    fieldIndex++;
-                }
-            }
-
-    // Combine local sums and counts into global ones
-    #pragma omp critical
-            {
-                for (size_t j = 0; j < columnsToImpute.size(); ++j)
-                {
-                    sums[j] += localSums[j];
-                    counts[j] += localCounts[j];
-                }
-            }
-        }
-
-    // Second pass: Impute missing values with mean
-    #pragma omp parallel for
-        for (size_t i = 0; i < localChunk.size(); ++i)
+#pragma omp for nowait
+        for (size_t i = 0; i < localChunk.size(); i++)
         {
             std::istringstream stream(localChunk[i]);
-            std::ostringstream newLine;
             std::string field;
             size_t fieldIndex = 0, colIndex = 0;
 
@@ -93,28 +47,63 @@ vector<string> CSVProcessor::imputeMissingValues(vector<string> localChunk)
             {
                 if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
                 {
-                    if (field.empty() || field == "NA")
+                    if (!field.empty() && field != "NA")
                     {
-                        double mean = counts[colIndex] > 0 ? sums[colIndex] / counts[colIndex] : 0.0;
-                        newLine << mean;
-                    }
-                    else
-                    {
-                        newLine << field;
+                        localSums[colIndex] += std::stod(field);
+                        localCounts[colIndex]++;
                     }
                     colIndex++;
+                }
+                fieldIndex++;
+            }
+        }
+
+// Combine local sums and counts into global ones
+#pragma omp critical
+        {
+            for (size_t j = 0; j < columnsToImpute.size(); ++j)
+            {
+                sums[j] += localSums[j];
+                counts[j] += localCounts[j];
+            }
+        }
+    }
+
+// Second pass: Impute missing values with mean
+#pragma omp parallel for
+    for (size_t i = 0; i < localChunk.size(); ++i)
+    {
+        std::istringstream stream(localChunk[i]);
+        std::ostringstream newLine;
+        std::string field;
+        size_t fieldIndex = 0, colIndex = 0;
+
+        while (getline(stream, field, ','))
+        {
+            if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
+            {
+                if (field.empty() || field == "NA")
+                {
+                    double mean = counts[colIndex] > 0 ? sums[colIndex] / counts[colIndex] : 0.0;
+                    newLine << mean;
                 }
                 else
                 {
                     newLine << field;
                 }
-
-                newLine << (fieldIndex < NUM_FIELDS - 1 ? "," : "");
-                fieldIndex++;
+                colIndex++;
             }
-    #pragma omp critical
-            localChunk[i] = newLine.str();
-        }*/
+            else
+            {
+                newLine << field;
+            }
+
+            newLine << (fieldIndex < NUM_FIELDS - 1 ? "," : "");
+            fieldIndex++;
+        }
+#pragma omp critical
+        localChunk[i] = newLine.str();
+    }
 
     return localChunk;
 }
@@ -356,7 +345,6 @@ vector<string> CSVProcessor::processFile()
                     isFirst = false;
                 }
                 out << headers[i];
-                cout << "Wrote header " << headers[i] << " to out" << endl;
                 feOut << headers[i];
             }
         }
