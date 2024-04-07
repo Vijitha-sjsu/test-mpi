@@ -1,5 +1,6 @@
 #include "CSVProcessor.h"
 #include "Constants.h"
+#include "MPIParser.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -8,6 +9,9 @@
 #include <set>
 #include <ctime>
 #include <iomanip>
+#include <mpi.h>
+#include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -19,23 +23,69 @@ CSVProcessor::CSVProcessor(const std::string &inputFile, const std::string &outp
       totalRows(0),
       validFields(NUM_FIELDS, true) {}
 
-void CSVProcessor::imputeMissingValues()
+vector<string> CSVProcessor::imputeMissingValues(vector<string> localChunk)
 {
 
-    std::vector<size_t> columnsToImpute = {/* indices of columns with missing values */};
+    std::vector<size_t> columnsToImpute = {/*13, 29, 38, 39, 40, 41, 42*/};
     std::vector<double> sums(columnsToImpute.size(), 0.0);
     std::vector<int> counts(columnsToImpute.size(), 0);
 
-// First pass: Compute sums and counts for mean calculation in a thread-safe manner
-#pragma omp parallel
+    int count = 0;
+    std::istringstream stream(localChunk[0]);
+    std::string field;
+    while (count != 13)
     {
-        std::vector<double> localSums(columnsToImpute.size(), 0.0);
-        std::vector<int> localCounts(columnsToImpute.size(), 0);
+        getline(stream, field, ',');
+        count++;
+    }
 
-#pragma omp for nowait
-        for (size_t i = 0; i < lines.size(); ++i)
+    cout << "Index: " << count << " field: " << field << endl;
+
+    // First pass: Compute sums and counts for mean calculation in a thread-safe manner
+    /*#pragma omp parallel
         {
-            std::istringstream stream(lines[i]);
+            std::vector<double> localSums(columnsToImpute.size(), 0.0);
+            std::vector<int> localCounts(columnsToImpute.size(), 0);
+
+    #pragma omp for nowait
+            for (size_t i = 0; i < localChunk.size(); ++i)
+            {
+                std::istringstream stream(localChunk[i]);
+                std::string field;
+                size_t fieldIndex = 0, colIndex = 0;
+
+                while (getline(stream, field, ','))
+                {
+                    if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
+                    {
+                        if (!field.empty() && field != "NA")
+                        {
+                            localSums[colIndex] += std::stod(field);
+                            localCounts[colIndex]++;
+                        }
+                        colIndex++;
+                    }
+                    fieldIndex++;
+                }
+            }
+
+    // Combine local sums and counts into global ones
+    #pragma omp critical
+            {
+                for (size_t j = 0; j < columnsToImpute.size(); ++j)
+                {
+                    sums[j] += localSums[j];
+                    counts[j] += localCounts[j];
+                }
+            }
+        }
+
+    // Second pass: Impute missing values with mean
+    #pragma omp parallel for
+        for (size_t i = 0; i < localChunk.size(); ++i)
+        {
+            std::istringstream stream(localChunk[i]);
+            std::ostringstream newLine;
             std::string field;
             size_t fieldIndex = 0, colIndex = 0;
 
@@ -43,72 +93,39 @@ void CSVProcessor::imputeMissingValues()
             {
                 if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
                 {
-                    if (!field.empty() && field != "NA")
+                    if (field.empty() || field == "NA")
                     {
-                        localSums[colIndex] += std::stod(field);
-                        localCounts[colIndex]++;
+                        double mean = counts[colIndex] > 0 ? sums[colIndex] / counts[colIndex] : 0.0;
+                        newLine << mean;
+                    }
+                    else
+                    {
+                        newLine << field;
                     }
                     colIndex++;
-                }
-                fieldIndex++;
-            }
-        }
-
-// Combine local sums and counts into global ones
-#pragma omp critical
-        {
-            for (size_t j = 0; j < columnsToImpute.size(); ++j)
-            {
-                sums[j] += localSums[j];
-                counts[j] += localCounts[j];
-            }
-        }
-    }
-
-// Second pass: Impute missing values with mean
-#pragma omp parallel for
-    for (size_t i = 0; i < lines.size(); ++i)
-    {
-        std::istringstream stream(lines[i]);
-        std::ostringstream newLine;
-        std::string field;
-        size_t fieldIndex = 0, colIndex = 0;
-
-        while (getline(stream, field, ','))
-        {
-            if (colIndex < columnsToImpute.size() && fieldIndex == columnsToImpute[colIndex])
-            {
-                if (field.empty() || field == "NA")
-                {
-                    double mean = counts[colIndex] > 0 ? sums[colIndex] / counts[colIndex] : 0.0;
-                    newLine << mean;
                 }
                 else
                 {
                     newLine << field;
                 }
-                colIndex++;
-            }
-            else
-            {
-                newLine << field;
-            }
 
-            newLine << (fieldIndex < NUM_FIELDS - 1 ? "," : "");
-            fieldIndex++;
-        }
-#pragma omp critical
-        lines[i] = newLine.str();
-    }
+                newLine << (fieldIndex < NUM_FIELDS - 1 ? "," : "");
+                fieldIndex++;
+            }
+    #pragma omp critical
+            localChunk[i] = newLine.str();
+        }*/
+
+    return localChunk;
 }
 
-void CSVProcessor::removeDuplicates()
+vector<string> CSVProcessor::removeDuplicates(vector<string> localChunk)
 {
 
     std::set<std::string> uniqueLines; // This should now be recognized with the set header included
     std::vector<std::string> newLines;
 
-    for (const auto &line : lines)
+    for (const auto &line : localChunk)
     {
         if (uniqueLines.find(line) == uniqueLines.end())
         {
@@ -116,8 +133,7 @@ void CSVProcessor::removeDuplicates()
             newLines.push_back(line);
         }
     }
-
-    lines.swap(newLines); // Replace the old lines with the new, deduplicated lines
+    return newLines;
 }
 
 void CSVProcessor::dateToDayAndMonth(const std::string &dateStr, std::string &dayOfWeek, std::string &month)
@@ -210,151 +226,200 @@ void CSVProcessor::featureEngineering()
 
 vector<string> CSVProcessor::processFile()
 {
-    std::ifstream file(inputFile);
+
+    MPIParser parser;
+
+    int worldSize, worldRank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
+    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+
     std::ofstream out(outputFile, std::ios::trunc), statsOut(statsFile, std::ios::trunc), feOut(featureEngineeredFile, std::ios::trunc);
     std::string row;
     std::vector<std::string> headers;
     std::vector<int> globalEmptyCounts(NUM_FIELDS, 0);
 
-    if (!file.is_open())
+    if (worldRank == 0)
     {
-        std::cerr << "Error opening file: " << inputFile << std::endl;
-        return lines;
-    }
 
-    // Read and store headers
-    if (getline(file, row))
-    {
-        std::istringstream headerStream(row);
-        std::string header;
-        while (getline(headerStream, header, ','))
+        vector<string> allProcessedLines;
+        std::ifstream file(inputFile);
+        if (!file.is_open())
         {
-            headers.push_back(header);
+            std::cerr << "Error opening file: " << inputFile << std::endl;
+            return lines;
         }
-    }
 
-    // Store all lines for processing
-    while (getline(file, row))
-    {
-        lines.push_back(row);
-    }
-
-    file.close(); // Close the file as it's no longer needed for direct reading
-
-    imputeMissingValues(); // Call the imputeMissingValues function
-
-    // Remove duplicate lines
-    removeDuplicates();
-
-    // Update totalRows based on the number of lines read
-    totalRows = lines.size();
-
-// Parallel processing to count empty fields
-#pragma omp parallel
-    {
-        std::vector<int> localEmptyCounts(NUM_FIELDS, 0);
-#pragma omp for nowait
-        for (size_t i = 0; i < lines.size(); ++i)
+        // Read and store headers
+        if (getline(file, row))
         {
-            std::istringstream s(lines[i]);
-            std::string field;
-            size_t fieldIndex = 0;
-            while (getline(s, field, ',') && fieldIndex < NUM_FIELDS)
+            std::istringstream headerStream(row);
+            std::string header;
+            while (getline(headerStream, header, ','))
             {
-                if (field.empty() || field == "NA")
-                {
-                    localEmptyCounts[fieldIndex]++;
-                }
-                ++fieldIndex;
+                headers.push_back(header);
             }
+            cout << "Stored headers." << endl;
         }
+
+        // Store all lines for processing
+        while (getline(file, row))
+        {
+            lines.push_back(row);
+        }
+
+        cout << "Stored rows: " << lines.size() << endl;
+
+        file.close(); // Close the file as it's no longer needed for direct reading
+        worldSize -= 1;
+        for (int i = 1; i <= worldSize; i++)
+        {
+
+            int chunkSize = lines.size() / worldSize;
+            int startIndex = i * chunkSize;
+            int endIndex = (i == worldSize - 1) ? lines.size() : startIndex + chunkSize;
+
+            cout << "Rank: " << i << " chunk size: " << chunkSize << endl;
+
+            vector<string> localChunk(lines.begin() + startIndex, lines.begin() + endIndex);
+
+            string serialized = parser.serializeVector(localChunk);
+
+            MPI_Send(serialized.data(), serialized.size(), MPI_BYTE, i, 0, MPI_COMM_WORLD);
+
+            MPI_Status status;
+            int count;
+            MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, MPI_BYTE, &count);
+
+            std::string serializedProcessedChunk(count, '\0');
+            MPI_Recv(serializedProcessedChunk.data(), count, MPI_BYTE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            std::vector<std::string> processedChunk = parser.deserializeVector(serializedProcessedChunk);
+            // cout << "Received " << processedChunk.size() << " from " << i << endl;
+            allProcessedLines.insert(allProcessedLines.end(), processedChunk.begin(), processedChunk.end());
+        }
+
+        totalRows = allProcessedLines.size();
+        // Parallel processing to count empty fields
+#pragma omp parallel
+        {
+            std::vector<int> localEmptyCounts(NUM_FIELDS, 0);
+#pragma omp for nowait
+            for (size_t i = 0; i < allProcessedLines.size(); ++i)
+            {
+                std::istringstream s(allProcessedLines[i]);
+                std::string field;
+                size_t fieldIndex = 0;
+                while (getline(s, field, ',') && fieldIndex < NUM_FIELDS)
+                {
+                    if (field.empty() || field == "NA")
+                    {
+                        localEmptyCounts[fieldIndex]++;
+                    }
+                    ++fieldIndex;
+                }
+            }
 
 #pragma omp critical
+            for (size_t i = 0; i < NUM_FIELDS; ++i)
+            {
+                globalEmptyCounts[i] += localEmptyCounts[i];
+            }
+        }
+
+        // Calculate percentage of missing data and update validFields accordingly
         for (size_t i = 0; i < NUM_FIELDS; ++i)
         {
-            globalEmptyCounts[i] += localEmptyCounts[i];
+            double percentageMissing = static_cast<double>(globalEmptyCounts[i]) / totalRows * 100;
+            validFields[i] = percentageMissing < 50.0; // Mark field as valid if missing data is less than 50%
+            statsOut << headers[i] << "," << globalEmptyCounts[i] << "," << percentageMissing << "%," << (validFields[i] ? "Kept" : "Removed") << "\n";
         }
-    }
 
-    // Calculate percentage of missing data and update validFields accordingly
-    for (size_t i = 0; i < NUM_FIELDS; ++i)
-    {
-        double percentageMissing = static_cast<double>(globalEmptyCounts[i]) / totalRows * 100;
-        validFields[i] = percentageMissing < 50.0; // Mark field as valid if missing data is less than 50%
-        statsOut << headers[i] << "," << globalEmptyCounts[i] << "," << percentageMissing << "%," << (validFields[i] ? "Kept" : "Removed") << "\n";
-    }
+        // Rewrite the file with only valid fields
+        file.open(inputFile); // Re-open the file for reading
+        getline(file, row);   // Skip the original header row
 
-    // Rewrite the file with only valid fields
-    file.open(inputFile); // Re-open the file for reading
-    getline(file, row);   // Skip the original header row
-
-    // Write valid headers to the output file
-    bool isFirst = true;
-    for (size_t i = 0; i < NUM_FIELDS; ++i)
-    {
-        if (validFields[i])
+        // Write valid headers to the output file
+        bool isFirst = true;
+        for (size_t i = 0; i < NUM_FIELDS; ++i)
         {
-            if (!isFirst)
-            {
-                out << ",";
-                feOut << ",";
-            }
-            else
-            {
-                isFirst = false;
-            }
-            out << headers[i];
-            feOut << headers[i];
-        }
-    }
-    out << "\n";
-    feOut << "\n";
-    feOut.close();
 
-    // Filter rows based on validFields
-    while (getline(file, row))
-    {
-        std::istringstream s(row);
-        std::string field;
-        size_t fieldIndex = 0;
-        std::string newRow;
-        isFirst = true;
-        while (getline(s, field, ',') && fieldIndex < NUM_FIELDS)
-        {
-            if (validFields[fieldIndex])
+            if (validFields[i])
             {
                 if (!isFirst)
                 {
-                    newRow += ",";
+                    out << ",";
+                    feOut << ",";
                 }
                 else
                 {
                     isFirst = false;
                 }
-                newRow += field;
+                out << headers[i];
+                cout << "Wrote header " << headers[i] << " to out" << endl;
+                feOut << headers[i];
             }
-            ++fieldIndex;
         }
-        out << newRow << "\n";
+        out << "\n";
+        feOut << "\n";
+        feOut.close();
+
+        // Filter rows based on validFields
+        while (getline(file, row))
+        {
+            std::istringstream s(row);
+            std::string field;
+            size_t fieldIndex = 0;
+            std::string newRow;
+            isFirst = true;
+            while (getline(s, field, ',') && fieldIndex < NUM_FIELDS)
+            {
+                if (validFields[fieldIndex])
+                {
+                    if (!isFirst)
+                    {
+                        newRow += ",";
+                    }
+                    else
+                    {
+                        isFirst = false;
+                    }
+                    newRow += field;
+                }
+                ++fieldIndex;
+            }
+            out << newRow << "\n";
+        }
+
+        allProcessedLines.clear();
+
+        // get all new allProcessedLines from the filtered file
+        ifstream filteredFile(outputFile);
+        while (getline(filteredFile, row))
+        {
+            allProcessedLines.push_back(row);
+        }
     }
-
-    lines.clear();
-
-    // get all new lines from the filtered file
-    ifstream filteredFile(outputFile);
-    while (getline(filteredFile, row))
+    else
     {
-        lines.push_back(row);
+        MPI_Status status;
+        int count;
+        MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
+        MPI_Get_count(&status, MPI_BYTE, &count);
+
+        std::string serializedLocalChunk(count, '\0');
+        MPI_Recv(&serializedLocalChunk[0], count, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Deserialize the data back into a vector of strings
+        std::vector<std::string> localChunk = parser.deserializeVector(serializedLocalChunk);
+
+        vector<string> imputedVector = imputeMissingValues(localChunk);
+        vector<string> uniqueVector = removeDuplicates(imputedVector);
+        string imputedSerialized = parser.serializeVector(uniqueVector); // Call the imputeMissingValues function
+
+        // send the serialized imputed data back to master
+        MPI_Send(imputedSerialized.data(), imputedSerialized.size(), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
     }
-
-    // featureEngineering(); // Implement this function based on your feature engineering needs)
-
-    // Here, for simplicity, we just copy the data to the feature engineering output
-    // You should replace this with actual feature engineering logic
-
-    std::cout << "Filtered data saved to " << outputFile << std::endl;
-    std::cout << "Feature-engineered data saved to " << featureEngineeredFile << std::endl;
-    std::cout << "Field statistics saved to " << statsFile << std::endl;
 
     return lines;
 }
