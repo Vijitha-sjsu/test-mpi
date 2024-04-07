@@ -213,7 +213,8 @@ void CSVProcessor::featureEngineering()
     feOut.close();
 }
 
-vector<string> CSVProcessor::processFile()
+// vector<string> CSVProcessor::processFile()
+void CSVProcessor::processFile()
 {
 
     MPIParser parser;
@@ -226,16 +227,16 @@ vector<string> CSVProcessor::processFile()
     std::string row;
     std::vector<std::string> headers;
     std::vector<int> globalEmptyCounts(NUM_FIELDS, 0);
+    vector<string> allProcessedLines;
 
     if (worldRank == 0)
     {
 
-        vector<string> allProcessedLines;
         std::ifstream file(inputFile);
         if (!file.is_open())
         {
             std::cerr << "Error opening file: " << inputFile << std::endl;
-            return lines;
+            // return lines;
         }
 
         // Read and store headers
@@ -284,7 +285,7 @@ vector<string> CSVProcessor::processFile()
             MPI_Recv(serializedProcessedChunk.data(), count, MPI_BYTE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             std::vector<std::string> processedChunk = parser.deserializeVector(serializedProcessedChunk);
-            // cout << "Received " << processedChunk.size() << " from " << i << endl;
+
             allProcessedLines.insert(allProcessedLines.end(), processedChunk.begin(), processedChunk.end());
         }
 
@@ -378,15 +379,6 @@ vector<string> CSVProcessor::processFile()
             }
             out << newRow << "\n";
         }
-
-        allProcessedLines.clear();
-
-        // get all new allProcessedLines from the filtered file
-        ifstream filteredFile(outputFile);
-        while (getline(filteredFile, row))
-        {
-            allProcessedLines.push_back(row);
-        }
     }
     else
     {
@@ -409,5 +401,6 @@ vector<string> CSVProcessor::processFile()
         MPI_Send(imputedSerialized.data(), imputedSerialized.size(), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
     }
 
-    return lines;
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // return allProcessedLines;
 }
