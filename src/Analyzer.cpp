@@ -164,3 +164,61 @@ void Analyzer::analyzeAndPlotCommonViolations() {
 
     matplot::show();
 }
+
+int convertTimeTo24Hour(const string& timeStr) {
+    int hour = stoi(timeStr.substr(0, 2));
+    char meridian = timeStr.back();
+    if (meridian == 'P' && hour != 12) hour += 12;
+    if (meridian == 'A' && hour == 12) hour = 0;
+    return hour;
+}
+
+void Analyzer::analyzeViolationsByTimeOfDay() {
+    for (const auto& line : lines) {
+        istringstream iss(line);
+        string field;
+        // Assuming Violation Time is the 20th field
+        for (int i = 0; i < 19; ++i) getline(iss, field, ',');
+        getline(iss, field, ',');
+        int hour = convertTimeTo24Hour(field);
+        timeOfDayCounts[to_string(hour)]++;
+    }
+    // Now plot this data
+    vector<double> counts;
+    vector<string> hours;
+    for (int i = 0; i < 24; ++i) {
+        hours.push_back(to_string(i));
+        counts.push_back(timeOfDayCounts[to_string(i)]);
+    }
+    plotData(counts, hours, "Violations by Time of Day", "Hour", "Violations");
+}
+
+void Analyzer::analyzeViolationsByMonth() {
+    for (const auto& line : lines) {
+        istringstream iss(line);
+        string field;
+        // Assuming Issue Date is the 5th field
+        for (int i = 0; i < 4; ++i) getline(iss, field, ',');
+        getline(iss, field, ',');
+        istringstream dateIss(field);
+        getline(dateIss, field, '/');
+        monthCounts[field]++;
+    }
+    // Now plot this data
+    vector<double> counts;
+    vector<string> months = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
+    for (const auto& month : months) {
+        counts.push_back(monthCounts[month]);
+    }
+    plotData(counts, months, "Violations by Month", "Month", "Violations");
+}
+
+void Analyzer::plotData(const vector<double>& values, const vector<string>& labels, const string& title, const string& xlabel, const string& ylabel) {
+    auto barChart = bar(values);
+    xticks(iota(0, labels.size() - 1));
+    xticklabels(labels);
+    xlabel(xlabel);
+    ylabel(ylabel);
+    title(title);
+    show();
+}
