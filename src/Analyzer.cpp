@@ -214,11 +214,11 @@ void Analyzer::analyzeViolationsByMonth() {
 }
 
 void Analyzer::plotData(const vector<double>& values, const vector<string>& labels, const string& title, const string& xlabel, const string& ylabel) {
-    auto barChart = bar(values);
-    xticks(iota(0, labels.size() - 1));
-    xticklabels(labels);
-    xlabel(xlabel);
-    ylabel(ylabel);
-    title(title);
-    show();
+    auto barChart = matplot::bar(values);
+    matplot::xticks(matplot::iota(0, static_cast<int>(labels.size() - 1)));
+	matplot::xticklabels(labels);
+	matplot::xlabel(xlabel);
+	matplot::ylabel(ylabel);
+	matplot::title(title);
+	matplot::show();
 }
