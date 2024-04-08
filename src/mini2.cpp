@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
     analyzer.aggregateData();
     analyzer.showTopTenPrecincts();
     analyzer.analyzeAndPlotCommonViolations();
+    analyzer.analyzeViolationsByTimeOfDay();
+    analyzer.analyzeViolationsByMonth();
 
     return 0;
 }
