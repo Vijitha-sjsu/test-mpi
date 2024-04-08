@@ -72,7 +72,7 @@ void Analyzer::showTopTenPrecincts()
 	std::sort(precinctCounts.begin(), precinctCounts.end(), [](const std::pair<std::string, int> &a, const std::pair<std::string, int> &b)
 			  { return a.second > b.second; });
 
-	std::ofstream outFile("../processedfiles/hotspots.csv");
+	std::ofstream outFile("/Users/vijithagunta/eclipse-workspace/new-mini2/Mini-Project-2-CMPE275/processedfiles/hotspots.csv");
 
 	// Check if the file stream is open
 	if (!outFile.is_open())
@@ -111,4 +111,56 @@ void Analyzer::showTopTenPrecincts()
 
 	// Display the plot
 	matplot::show();
+}
+
+void Analyzer::analyzeAndPlotCommonViolations() {
+    // A map to hold violation codes and their counts
+    std::unordered_map<std::string, int> violationCounts;
+
+    // Aggregate violation codes
+    #pragma omp parallel for
+    for (size_t i = 0; i < lines.size(); ++i) {
+        std::istringstream iss(lines[i]);
+        std::string field;
+
+        // Assuming Violation Code is the 5th field
+        for (int j = 0; j < 5; ++j) {
+            std::getline(iss, field, ',');
+        }
+
+        #pragma omp critical
+        violationCounts[field]++;
+    }
+
+    // Prepare data for plotting
+    std::vector<std::string> codes;
+    std::vector<double> counts;
+    for (const auto& vc : violationCounts) {
+        codes.push_back(vc.first);
+        counts.push_back(static_cast<double>(vc.second));
+    }
+
+    // Sort by count descending
+    std::vector<int> idx(counts.size());
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&counts](int i1, int i2) {return counts[i1] > counts[i2];});
+
+    // Take top 10 (or fewer, if there aren't that many)
+    size_t topN = std::min<size_t>(10, counts.size());
+    std::vector<std::string> topCodes(topN);
+    std::vector<double> topCounts(topN);
+    for (size_t i = 0; i < topN; ++i) {
+        topCodes[i] = codes[idx[i]];
+        topCounts[i] = counts[idx[i]];
+    }
+
+    // Plotting
+    auto fig = matplot::bar(topCounts);
+    matplot::xticks(matplot::iota(0, topN - 1));
+    matplot::xticklabels(topCodes);
+    matplot::xlabel("Violation Code");
+    matplot::ylabel("Count");
+    matplot::title("Top 10 Most Common Violations");
+
+    matplot::show();
 }
